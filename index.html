@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Tracker - Live</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: -apple-system, system-ui, sans-serif;
+            background: #f2f2f7;
+        }
+
+        /* LOGIN */
+        #login {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+            z-index: 1000; /* Pastikan di atas peta */
+        }
+
+        .box {
+            width: 90%;
+            max-width: 320px;
+            text-align: center;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            margin: 8px 0;
+            border-radius: 12px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: #007aff;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* MAP */
+        #map {
+            height: 100vh;
+            width: 100%;
+            visibility: hidden; /* Pakai visibility agar Leaflet bisa menghitung ukuran objek */
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="login">
+    <div class="box">
+        <h2 style="font-weight: 600;">Find My Device</h2>
+        <input id="name" placeholder="Masukkan Nama Perangkat">
+        <button onclick="login()">Lacak Lokasi</button>
+        <p style="font-size: 12px; color: gray; margin-top: 15px;">
+            Pastikan HTTPS aktif dan izin GPS diberikan.
+        </p>
+    </div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+let map, marker;
+
+function login(){
+    let name = document.getElementById("name").value;
+    if(name === ""){
+        alert("Nama tidak boleh kosong!");
+        return;
+    }
+
+    // Transisi UI
+    document.getElementById("login").style.display = "none";
+    document.getElementById("map").style.visibility = "visible";
+
+    initMap();
+    trackLocation(name);
+}
+
+function initMap(){
+    // Inisialisasi peta ke koordinat default (Jakarta)
+    map = L.map('map').setView([-6.2000, 106.8166], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    marker = L.marker([-6.2000, 106.8166]).addTo(map);
+
+    // FIX: Memaksa peta menghitung ulang ukuran setelah login
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 200);
+}
+
+function trackLocation(name){
+    if(navigator.geolocation){
+        navigator.geolocation.watchPosition(pos => {
+            let lat = pos.coords.latitude;
+            let lon = pos.coords.longitude;
+
+            marker.setLatLng([lat, lon])
+                  .bindPopup("<b>" + name + "</b><br>Sedang di sini")
+                  .openPopup();
+
+            map.setView([lat, lon], 16);
+
+        }, (err) => {
+            alert("Gagal akses lokasi. Pastikan GPS aktif!");
+            console.error(err);
+        }, {
+            enableHighAccuracy: true
+        });
+    } else {
+        alert("Browser tidak mendukung geolokasi.");
+    }
+}
+</script>
+
+</body>
+</html>
